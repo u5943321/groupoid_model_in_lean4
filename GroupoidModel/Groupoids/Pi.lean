@@ -416,12 +416,23 @@ def lamAbeta.ptFunc  {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
       -- map_id := sorry
       -- map_comp := sorry
 
+lemma sec_IsSec {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
+  (α : Γ ⥤ PGrpd) (h : α ⋙ forgetToGrpd = A) :
+  IsSec (CategoryTheory.Grothendieck.Groupoidal.forget) (sec A α h) := by
+  simp only [IsSec, sec_forget]
+
+
+
 def lamAbeta.pt  {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
     (β  : ∫(A) ⥤ PGrpd.{u₁,u₁})
     (x: Γ )
     : Fiber_Grpd A (β ⋙ forgetToGrpd) x where
       obj :=  lamAbeta.ptFunc β x
-      property := sorry
+      property := by
+       simp only [sigma_obj, sigmaObj, Grpd.coe_of, fstAux_app, ptFunc]
+       apply sec_IsSec
+
+
 
 
 def lamAbeta {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
@@ -429,14 +440,22 @@ def lamAbeta {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
       obj x:= {
         α := (pi (β ⋙ forgetToGrpd)).obj x
         str := {
-          Hom := sorry
-          id := sorry
-          comp := sorry
-          inv := sorry
-          pt := sorry
+          pt := lamAbeta.pt β x
         }
       }
-      map := sorry
+      --CategoryTheory.PointedFunctor
+      map {x y} f :=
+       PointedFunctor.mk ((pi (β ⋙ forgetToGrpd)).map f) {
+         app ay:= by
+          simp[pi]
+          sorry
+
+        --  {
+        --    base := sorry
+        --    fiber := sorry
+        --  }
+        --  naturality := sorry
+       }
       map_id := sorry
       map_comp := sorry
 
