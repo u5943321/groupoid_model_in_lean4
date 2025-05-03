@@ -368,15 +368,86 @@ def pi {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
       map_id x:= conjugateLiftFunc_id A B x
       map_comp := conjugateLiftFunc_comp A B
 
+
+def smallUPi_app {Γ : Ctx.{max u (v+1)}}
+    (AB : y(Γ) ⟶ smallU.{v, max u (v+1)}.Ptp.obj smallU.{v, max u (v+1)}.Ty) :
+    y(Γ) ⟶ smallU.{v, max u (v+1)}.Ty :=
+  yonedaCategoryEquiv.symm (pi (smallUPTpEquiv AB).2)
+
+
+
 /-- The formation rule for Π-types for the ambient natural model `smallU` -/
 def smallUPi.Pi : smallU.{v}.Ptp.obj smallU.{v}.Ty ⟶ smallU.{v}.Ty :=
   NatTrans.yonedaMk (fun AB =>
     yonedaCategoryEquiv.symm (pi (smallUPTpEquiv AB).2))
     sorry
 
+
+
+
+def lamAbeta.pt0  {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
+    (β  : Groupoidal A ⥤ PGrpd.{u₁,u₁})
+    (x: Γ ) (a: A.obj x)
+    : (sigma A (β ⋙ PGrpd.forgetToGrpd)).obj x where
+      base  := a
+      fiber := (β.obj ((Groupoidal.ι A x).obj a)).str.pt
+
+
+
+def lamAbeta.ptFunc  {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
+    (β  : Groupoidal A ⥤ PGrpd.{u₁,u₁})
+    (x: Γ )
+    : (A.obj x) ⥤ ((sigma A (β ⋙ PGrpd.forgetToGrpd)).obj x) where
+      obj := lamAbeta.pt0 β x
+      map {a1 a2} f := {
+        base := f
+        fiber := by
+         simp
+         let a0 := ((Groupoidal.ι A x) ⋙ β).map f
+         simp[pt0]
+         have a0':= CategoryTheory.PointedFunctor.point a0
+         simp[a0] at a0'
+         exact a0'
+      }
+        -- by
+        -- simp[pt0]
+        -- have a0 := ((Groupoidal.ι A x) ⋙ β).map f
+        -- exact a0
+        -- sorry
+      map_id := sorry
+      map_comp := sorry
+
+def lamAbeta.pt  {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
+    (β  : Groupoidal A ⥤ PGrpd.{u₁,u₁})
+    (x: Γ )
+    : Fiber_Grpd A (β ⋙ PGrpd.forgetToGrpd) x where
+      obj :=  lamAbeta.ptFunc β x
+      property := sorry
+
+
+def lamAbeta {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
+    (β  : Groupoidal A ⥤ PGrpd.{u₁,u₁}) : Γ ⥤  PGrpd.{u₁,u₁} where
+      obj x:= {
+        α := (pi (β ⋙ PGrpd.forgetToGrpd)).obj x
+        str := {
+          Hom := sorry
+          id := sorry
+          comp := sorry
+          inv := sorry
+          pt := sorry
+        }
+      }
+      map := sorry
+      map_id := sorry
+      map_comp := sorry
+
+def smallUPi.lam : smallU.{v}.Ptp.obj smallU.{v}.Tm ⟶ smallU.{v}.Tm :=
+  NatTrans.yonedaMk sorry sorry
+
+
 def smallUPi : NaturalModelPi smallU.{v} where
   Pi := smallUPi.Pi.{v}
-  lam := sorry
+  lam := smallUPi.lam.{v}
   Pi_pullback := sorry
 
 def uHomSeqPis' (i : ℕ) (ilen : i < 4) :
