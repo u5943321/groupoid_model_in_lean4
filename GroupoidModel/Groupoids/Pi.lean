@@ -169,6 +169,13 @@ abbrev Section.grpd {A:Type u} [Category.{v ,u} A] {B : Type u₁}
     [Groupoid.{v₁} B] (F : B ⥤ A) : Grpd :=
   Grpd.of (Section F)
 
+-- TODO JH: maybe not all of these ext lemmas are needed
+theorem Section.ext {A:Type u} [Category.{v ,u} A] {B : Type u₁}
+    [Groupoid.{v₁} B] (F : B ⥤ A) (s t : Section F)
+    (h : s.obj = t.obj) : s = t := by
+  ext
+  assumption
+
 open FunctorOperation
 
 -- TODO camelCase
@@ -180,6 +187,13 @@ def Fiber_Grpd {Γ : Grpd.{v₂,u₂}} (A : Γ ⥤ Grpd.{v₁,u₁})
 lemma Fiber_Grpd.α {Γ : Grpd.{v₂,u₂}} (A : Γ ⥤ Grpd.{v₁,u₁})
     (B : ∫(A) ⥤ Grpd.{v₁,u₁}) (x : Γ) :
     (Fiber_Grpd A B x).α = Section ((fstAux B).app x) := rfl
+
+-- TODO JH: maybe not all of these ext lemmas are needed
+theorem Fiber_Grpd.ext {Γ : Grpd.{v₂,u₂}} (A : Γ ⥤ Grpd.{v₁,u₁})
+    (B : ∫(A) ⥤ Grpd.{v₁,u₁}) (x : Γ) (s t : Fiber_Grpd A B x)
+    (h : s.obj = t.obj) : s = t := by
+  apply Section.ext
+  assumption
 
 def conjugate {D: Type*} (C: Grpd.{v₁,u₁}) [Category D] (A B : C ⥤ D)
     {x y: C} (f: x ⟶ y) (s: A.obj x ⟶  B.obj x) :
@@ -383,17 +397,16 @@ def smallUPi.Pi : smallU.{v}.Ptp.obj smallU.{v}.Ty ⟶ smallU.{v}.Ty :=
     sorry
 
 
+section
+variable {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}} (β  : ∫(A) ⥤ PGrpd.{u₁,u₁})
 
-
-def lamAbeta.pt0  {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
-    (β  : ∫(A) ⥤ PGrpd.{u₁,u₁})
+def lamAbeta.pt0
     (x: Γ ) (a: A.obj x)
     : (sigma A (β ⋙ forgetToGrpd)).obj x where
       base  := a
       fiber := (β.obj ((ι A x).obj a)).str.pt
 
-def lamAbeta.ptFunc  {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
-    (β : ∫(A) ⥤ PGrpd.{u₁,u₁}) (x : Γ) :
+def lamAbeta.ptFunc (x : Γ) :
     (A.obj x) ⥤ ((sigma A (β ⋙ forgetToGrpd)).obj x) :=
   sec ((ι A x ⋙ β) ⋙ forgetToGrpd) (ι A x ⋙ β) rfl
     -- where
@@ -416,27 +429,39 @@ def lamAbeta.ptFunc  {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
       -- map_id := sorry
       -- map_comp := sorry
 
-lemma sec_IsSec {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
+
+-- NOTE JH: not sure if we should have IsSec as a definition.
+-- Let's leave it for now though
+lemma sec_IsSec
   (α : Γ ⥤ PGrpd) (h : α ⋙ forgetToGrpd = A) :
-  IsSec (CategoryTheory.Grothendieck.Groupoidal.forget) (sec A α h) := by
+  IsSec forget (sec A α h) := by
   simp only [IsSec, sec_forget]
 
 
 
-def lamAbeta.pt  {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
-    (β  : ∫(A) ⥤ PGrpd.{u₁,u₁})
-    (x: Γ )
+def lamAbeta.pt (x : Γ)
     : Fiber_Grpd A (β ⋙ forgetToGrpd) x where
-      obj :=  lamAbeta.ptFunc β x
-      property := by
-       simp only [sigma_obj, sigmaObj, Grpd.coe_of, fstAux_app, ptFunc]
-       apply sec_IsSec
+  obj :=  lamAbeta.ptFunc β x
+  property := sec_IsSec _ _
+
+def lamAbetaSectionObj (x : Γ) : ∫(pi (β ⋙ forgetToGrpd)) :=
+  objMk x (lamAbeta.pt β x)
+
+def lamAbetaSection : Γ ⥤ ∫(pi (β ⋙ forgetToGrpd)) where
+  obj := lamAbetaSectionObj _
+  map {x y} f := homMk f (eqToHom $ by
+   -- the two objects are in fact equal, as objects in the category of sections
+   apply Fiber_Grpd.ext
+   -- so now it suffices to just show equality between the underlying functors
+   dsimp [pi]
+   sorry
+   )
+
+def lamAbeta' : Γ ⥤ PGrpd.{u₁,u₁} :=
+  lamAbetaSection β ⋙ toPGrpd _
 
 
-
-
-def lamAbeta {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
-    (β  : ∫(A) ⥤ PGrpd.{u₁,u₁}) : Γ ⥤  PGrpd.{u₁,u₁} where
+def lamAbeta : Γ ⥤ PGrpd.{u₁,u₁} where
       obj x:= {
         α := (pi (β ⋙ forgetToGrpd)).obj x
         str := {
@@ -458,6 +483,8 @@ def lamAbeta {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
        }
       map_id := sorry
       map_comp := sorry
+
+end
 
 def smallUPi.lam : smallU.{v}.Ptp.obj smallU.{v}.Tm ⟶ smallU.{v}.Tm :=
   NatTrans.yonedaMk sorry sorry
