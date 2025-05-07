@@ -181,6 +181,9 @@ def lift : C ⥤ Grothendieck A where
       simp
     · simp
 
+lemma lift_obj' (x: C):
+ (lift fst snd w).obj x = ⟨ snd.obj x , ((eqToHom w).app x).obj (pt fst x) ⟩ := rfl
+
 @[simp] theorem fac_right : lift fst snd w ⋙ Grothendieck.forget A = snd := by
   apply Functor.ext
   · simp [lift]
