@@ -169,13 +169,6 @@ abbrev Section.grpd {A:Type u} [Category.{v ,u} A] {B : Type u₁}
     [Groupoid.{v₁} B] (F : B ⥤ A) : Grpd :=
   Grpd.of (Section F)
 
--- TODO JH: maybe not all of these ext lemmas are needed
-theorem Section.ext {A:Type u} [Category.{v ,u} A] {B : Type u₁}
-    [Groupoid.{v₁} B] (F : B ⥤ A) (s t : Section F)
-    (h : s.obj = t.obj) : s = t := by
-  ext
-  assumption
-
 open FunctorOperation
 
 -- TODO camelCase
@@ -187,13 +180,6 @@ def Fiber_Grpd {Γ : Grpd.{v₂,u₂}} (A : Γ ⥤ Grpd.{v₁,u₁})
 lemma Fiber_Grpd.α {Γ : Grpd.{v₂,u₂}} (A : Γ ⥤ Grpd.{v₁,u₁})
     (B : ∫(A) ⥤ Grpd.{v₁,u₁}) (x : Γ) :
     (Fiber_Grpd A B x).α = Section ((fstAux B).app x) := rfl
-
--- TODO JH: maybe not all of these ext lemmas are needed
-theorem Fiber_Grpd.ext {Γ : Grpd.{v₂,u₂}} (A : Γ ⥤ Grpd.{v₁,u₁})
-    (B : ∫(A) ⥤ Grpd.{v₁,u₁}) (x : Γ) (s t : Fiber_Grpd A B x)
-    (h : s.obj = t.obj) : s = t := by
-  apply Section.ext
-  assumption
 
 def conjugate {D: Type*} (C: Grpd.{v₁,u₁}) [Category D] (A B : C ⥤ D)
     {x y: C} (f: x ⟶ y) (s: A.obj x ⟶  B.obj x) :
@@ -397,34 +383,17 @@ def smallUPi.Pi : smallU.{v}.Ptp.obj smallU.{v}.Ty ⟶ smallU.{v}.Ty :=
     sorry
 
 
-section
-variable {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}} (β  : ∫(A) ⥤ PGrpd.{u₁,u₁})
 
-def lamAbeta.pt0
+
+def lamAbeta.pt0  {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
+    (β  : ∫(A) ⥤ PGrpd.{u₁,u₁})
     (x: Γ ) (a: A.obj x)
     : (sigma A (β ⋙ forgetToGrpd)).obj x where
       base  := a
       fiber := (β.obj ((ι A x).obj a)).str.pt
 
-
-def lamAbeta.ptFunc00 (x : Γ) :
-    (A.obj x) ⥤ ((sigma A (β ⋙ forgetToGrpd)).obj x)  where
-      obj := lamAbeta.pt0 β x
-      map {a1 a2} f := {
-        base := f
-        fiber := by
-         simp
-         let a0 := ((ι A x) ⋙ β).map f
-         simp[pt0]
-         have a0':= CategoryTheory.PointedFunctor.point a0
-         simp[a0] at a0'
-         exact a0' --should refine
-      }
-      map_id := sorry
-      map_comp := sorry
-
-
-def lamAbeta.ptFunc (x : Γ) :
+def lamAbeta.ptFunc  {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
+    (β : ∫(A) ⥤ PGrpd.{u₁,u₁}) (x : Γ) :
     (A.obj x) ⥤ ((sigma A (β ⋙ forgetToGrpd)).obj x) :=
   sec ((ι A x ⋙ β) ⋙ forgetToGrpd) (ι A x ⋙ β) rfl
     -- where
@@ -447,30 +416,29 @@ def lamAbeta.ptFunc (x : Γ) :
       -- map_id := sorry
       -- map_comp := sorry
 
+lemma lamAbeta.ptFunc_obj  {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
+    (β : ∫(A) ⥤ PGrpd.{u₁,u₁}) (x : Γ) :
+   (lamAbeta.ptFunc β x).obj = lamAbeta.pt0 β x := rfl
 
--- NOTE JH: not sure if we should have IsSec as a definition.
--- Let's leave it for now though
-lemma sec_IsSec
+
+lemma sec_IsSec {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
   (α : Γ ⥤ PGrpd) (h : α ⋙ forgetToGrpd = A) :
-  IsSec forget (sec A α h) := by
+  IsSec (CategoryTheory.Grothendieck.Groupoidal.forget) (sec A α h) := by
   simp only [IsSec, sec_forget]
 
 
 
-def lamAbeta.pt (x : Γ)
+def lamAbeta.pt  {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
+    (β  : ∫(A) ⥤ PGrpd.{u₁,u₁})
+    (x: Γ )
     : Fiber_Grpd A (β ⋙ forgetToGrpd) x where
-  obj :=  lamAbeta.ptFunc β x
-  property := sec_IsSec _ _
+      obj :=  lamAbeta.ptFunc β x
+      property := by
+       simp only [sigma_obj, sigmaObj, Grpd.coe_of, fstAux_app, ptFunc]
+       apply sec_IsSec
 
 
-lemma lamAbeta.pt_obj (x : Γ) :
- (lamAbeta.pt β  x).obj= lamAbeta.ptFunc β x := rfl
-
-def lamAbetaSectionObj (x : Γ) : ∫(pi (β ⋙ forgetToGrpd)) :=
-  objMk x (lamAbeta.pt β x)
-
-
-
+/-Maybe deserve to have a file addressing functors to a grpd or category-/
 lemma inv_map {Γ : Grpd.{v,u}}  {A : Γ ⥤ Grpd.{u₁,u₁}} {x y: Γ } (f: x ⟶ y):
 CategoryTheory.inv (A.map f) = A.map (Groupoid.inv f):= by
  simp_all only [inv_eq_inv, Functor.map_inv]
@@ -492,139 +460,66 @@ lemma toGrpd_map_inv_comp'
  (A.map (Groupoid.inv f) ⋙ A.map f) = Functor.id _ := by
   apply toGrpd_map_inv_comp
 
+lemma toGrpd_map_comp
+{Γ : Grpd.{v,u}}  {A : Γ ⥤ Grpd.{u₁,u₁}}
+(β  : ∫(A) ⥤ PGrpd.{u₁,u₁})
+{x y z: ∫(A) } (f: x ⟶ y) (g: y ⟶ z) (a: β.obj x):
+ (β.map g).obj ((β.map f).obj a) = (β.map (f ≫ g)).obj a :=  by
+  simp_all only [Functor.map_comp, comp_toFunctor, Functor.comp_obj]
 
-lemma toGrpd_map_inv_comp''
-{Γ : Grpd.{v,u}}  {A : Γ ⥤ Grpd.{u₁,u₁}} {x y: Γ } (f: x ⟶ y):
- (CategoryTheory.inv (A.map f) ⋙ A.map f) = Functor.id _ := by
-  simp only[inv_map]
-  apply toGrpd_map_inv_comp
-
-lemma NatTrans_to_Functor_eq {C D: Type*} [Category C] [Category D] (F G: C⥤ D)
-(η: F ⟶ G)
- (p: ∀ c , F.obj c = G.obj c ) (h: ∀ c, η.app c = eqToHom (p c)):
- F = G := by
- fapply CategoryTheory.Functor.ext
- · exact p
- · intro c1 c2 f
-   let h1 := η.naturality f
-   simp[h] at h1
-   simp[← Category.assoc]
-   simp only[← CategoryTheory.comp_eqToHom_iff (p c2)]
-   assumption
-
-
-
-#check sigmaMap
-#check CategoryTheory.Grothendieck.Groupoidal.IsMegaPullback.lift
+/-Γ : Grpd
+A : ↑Γ ⥤ Grpd
+β : ∫(A) ⥤ PGrpd
+x y : ↑Γ
+f : x ⟶ y
+ay : ↑(A.obj y)
+e : ∀
+  (f_1 :
+    (ι A x).obj ((CategoryTheory.inv (A.map f)).obj ay) ⟶ (A.map f ⋙ ι A y).obj ((CategoryTheory.inv (A.map f)).obj ay))
+  (g : (A.map f ⋙ ι A y).obj ((CategoryTheory.inv (A.map f)).obj ay) ⟶ (ι A y).obj ay)
+  (a : ↑(β.obj ((ι A x).obj ((CategoryTheory.inv (A.map f)).obj ay)))),
+  (β.map g).obj ((β.map f_1).obj a) = (β.map (f_1 ≫ g)).obj a
 
 
+⊢ (β.map ((ιNatTrans f).app ((CategoryTheory.inv (A.map f)).obj ay) ≫ (ι A y).map (cast ⋯ (𝟙 ay)))).obj
+    PointedGroupoid.pt ⟶
+  PointedGroupoid.pt
 
-lemma lift_obj' {C:Type*}[Category C](A: Γ  ⥤ Cat) (fst: C ⥤ PCat) (snd: C⥤ Γ ) (w : fst ⋙ PCat.forgetToCat = snd ⋙ A)
-  (x: C):
- (Grothendieck.IsMegaPullback.lift fst snd w).obj x =
- ⟨ snd.obj x , ((eqToHom w).app x).obj (Grothendieck.IsMegaPullback.pt fst x) ⟩ := rfl
+  -/
 
-lemma lamAbeta_natural {x y:Γ} (f: x⟶ y)
---  (h : β ⋙ forgetToGrpd =
---      (Grothendieck.Groupoidal.toPGrpd) A ⋙ forgetToGrpd)
-     :
-    (lamAbeta.pt β x).obj ≫ (sigma A (β ⋙ forgetToGrpd)).map f =
-     A.map f ≫ (lamAbeta.pt β y).obj := by
-  -- simp[sigma,sigmaMap]
-  -- simp[← Functor.assoc]
-  have g1:  ∀ (c : ↑(A.obj x)),
-  ((lamAbeta.pt β x).obj ≫ (sigma A (β ⋙ forgetToGrpd)).map f).obj c = (A.map f ≫ (lamAbeta.pt β y).obj).obj c
- := by
-     intro ax
-     simp only[lamAbeta.pt_obj,lamAbeta.ptFunc,Grothendieck.Groupoidal.sec]
-     simp only[Grothendieck.Groupoidal.IsMegaPullback.lift]
-     simp
-     simp?[lift_obj']
-     simp[sigmaMap]
-     #check Grothendieck.Groupoidal.pre_obj_base
-     simp only[Grothendieck.Groupoidal.pre]
-     simp[Grothendieck.IsMegaPullback.pt]
-     simp[Grothendieck.pre] --when would I use which namespace?
-     congr
-     simp[ιNatTrans,Grothendieck.ιNatTrans ];
-     --should use beta,map { base := f, fiber := 𝟙 ((Grpd.forgetToCat.map (A.map f)).obj ax) } is a functor to pointed category
-     unfold  PointedCategory.pt
-     set h1 :
-     have e := @
-     (β.map { base := f, fiber := 𝟙 ((Grpd.forgetToCat.map (A.map f)).obj ax) }).point
+lemma foo {Γ : Type u} [Groupoid Γ]  {A : Γ ⥤ Grpd.{u₁,u₁}} {x y:Γ } (f: x ⟶ y)  :
+    (CategoryTheory.inv (A.map f))= A.map (Groupoid.inv f) := by
+  simp_all only [inv_eq_inv, Functor.map_inv]
 
-     simp[pt]
+-- lemma foo1  {Γ : Type u} [Groupoid Γ]  {A : Γ ⥤ Grpd.{u₁,u₁}}
+--  {x y:Γ } (f: x ⟶ y):
+-- (CategoryTheory.inv (A.map f)).obj = (ιNatTrans (Groupoid.inv f)).app := sorry
+lemma foo2  {Γ : Type u} [Groupoid Γ]  {A : Γ ⥤ Grpd.{u₁,u₁}}
+ {x y:Γ } (f: x ⟶ y) (ay ay': A.obj y) :
+ (whiskerLeft (A.map (Groupoid.inv f)) (ιNatTrans f)).app ay  =
+ eqToHom sorry := by
+  simp[ιNatTrans,Grothendieck.ιNatTrans]
+  apply  Grothendieck.ext
+  simp
+  congr
+  simp
+
+  #check (whiskerLeft (A.map (Groupoid.inv f)) (ιNatTrans f)).app ay
+  sorry
+
+
+lemma foo' {Γ : Type u} [Groupoid Γ]  {A : Γ ⥤ Grpd.{u₁,u₁}}
+ {x y:Γ } (f: x ⟶ y) (ay : A.obj y) :
+ ((ιNatTrans f).app ((CategoryTheory.inv (A.map f)).obj ay)) =
+ (ι A y).obj ay := by
+  rw![foo]
+  have e:= CategoryTheory.NatTrans.naturality (ιNatTrans f) (A.map (Groupoid.inv f))
+  sorry
 
 
 
-     have e := NatTrans.naturality (ιNatTrans f)  f
-     --simp[lamAbeta.pt]
-     apply h
-
-
-     simp only[Grothendieck.Groupoidal.pre]
-     apply CategoryTheory.Grothendieck.ext
-     simp[sigmaMap]
-
-     sorry
-  fapply NatTrans_to_Functor_eq
-  · exact {
-    app ax := {
-      base := by
-        simp[lamAbeta.pt_obj,lamAbeta.ptFunc]
-        sorry
-      fiber := sorry
-    }
-    naturality := sorry
-  }
-  · exact g1
-  · sorry
-  -- have e : (sigma A (β ⋙ forgetToGrpd)).map
-  -- sorry
-
-def lamAbetaSection : Γ ⥤ ∫(pi (β ⋙ forgetToGrpd)) where
-  obj := lamAbetaSectionObj _
-  map {x y} f := homMk f (eqToHom $ by
-   -- the two objects are in fact equal, as objects in the category of sections
-   apply Fiber_Grpd.ext
-   -- so now it suffices to just show equality between the underlying functors
-   dsimp only [pi, lamAbetaSectionObj, objMk_base, sigma_obj, sigmaObj, Grpd.coe_of, fstAux_app,
-     objMk_fiber, lamAbeta.pt_obj]
-   simp only[conjugateLiftFunc.obj,conjugate_FiberFunc.obj,conjugate]
-   have e : (lamAbeta.pt β x).obj ≫ (sigma A (β ⋙ forgetToGrpd)).map f =
-            A.map f ≫ (lamAbeta.pt β y).obj := lamAbeta_natural β f
-            -- Q:If I replace this lamAbeta_natural β f with sorry, and delete map_comp := sorry
-            --then Lean does not complain, why?
-
-   simp only[e]
-   simp[lamAbeta.pt]
-   simp[← CategoryTheory.Functor.assoc]
-   simp[toGrpd_map_inv_comp'']
-   rfl)
-  map_comp := sorry
-
-  --  have es: ∀ (X : ↑(A.obj y)),
-  -- ((conjugateLiftFunc A (β ⋙ forgetToGrpd) f).obj (lamAbeta.pt β x)).obj.obj X = (lamAbeta.ptFunc β y).obj X
-  --   := sorry
-  --  fapply CategoryTheory.Functor.ext
-  --  · exact es
-  --  · intro ay1 ay2 h
-  --    have e : ((conjugateLiftFunc A (β ⋙ forgetToGrpd) f).obj (lamAbeta.pt β x)).obj.obj
-  --              ay1 = (lamAbeta.ptFunc β y).obj ay1
-  --     := es ay1
-  --    simp at e
-  --   -- cases e
-  --    fapply Grothendieck.ext
-  --    · simp
-  --      sorry
-  --    · sorry
-
-
-def lamAbeta' : Γ ⥤ PGrpd.{u₁,u₁} :=
-  lamAbetaSection β ⋙ toPGrpd _
-
-
-def lamAbeta : Γ ⥤ PGrpd.{u₁,u₁} where
+def lamAbeta {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
+    (β  : ∫(A) ⥤ PGrpd.{u₁,u₁}) : Γ ⥤  PGrpd.{u₁,u₁} where
       obj x:= {
         α := (pi (β ⋙ forgetToGrpd)).obj x
         str := {
@@ -636,7 +531,63 @@ def lamAbeta : Γ ⥤ PGrpd.{u₁,u₁} where
        PointedFunctor.mk ((pi (β ⋙ forgetToGrpd)).map f) {
          app ay:= by
           simp[pi]
-          sorry
+          simp[conjugateLiftFunc,conjugate_FiberFunc,conjugating]
+          simp[PointedCategory.pt,PointedGroupoid.pt,lamAbeta.pt,
+              lamAbeta.ptFunc_obj]
+
+          exact ⟨by
+           simp[CategoryTheory.Grpd.forgetToCat];
+           simp[lamAbeta.pt0,sigmaMap,sigmaMap];
+           rw![inv_map]
+           have e0: (A.map f).obj ((A.map (Groupoid.inv f)).obj ay) =
+                     ((A.map (Groupoid.inv f)) ⋙ (A.map f)).obj ay := by
+                     symm
+                     --apply Cat.comp_obj
+                     simp_all only [inv_eq_inv, Functor.map_inv, Functor.comp_obj]
+
+           have e : (A.map f).obj ((A.map (Groupoid.inv f)).obj ay) = ay := by
+            simp only[e0]
+            simp only[toGrpd_map_inv_comp' ] --Q:Ask about things like this
+            simp
+            --#check CategoryTheory.Functor.map_comp
+           simp only[e]
+           exact (𝟙 ay)
+           , by
+            simp only [Functor.map_id]
+            simp only[lamAbeta.ptFunc_obj,lamAbeta.pt0]
+            simp only[Functor.comp_obj, forgetToGrpd_obj,id_eq
+              Functor.comp_map, forgetToGrpd_map]
+            rw![forgetToGrpd_map]
+            simp only[id]
+            --simp[sigmaMap]
+            simp[sigmaMap,CategoryTheory.Grpd.forgetToCat]
+            have e := @toGrpd_map_comp Γ A β   ((ι A x).obj ((CategoryTheory.inv (A.map f)).obj ay))
+                    ((A.map f ⋙ ι A y).obj ((CategoryTheory.inv (A.map f)).obj ay))
+                    ((ι A y).obj ay)
+            simp only[e]
+            simp only[CategoryTheory.Grothendieck.Groupoidal.ιNatTrans_comp_app]
+            have e' :=
+             CategoryTheory.Grothendieck.Groupoidal.ιNatTrans_comp_app
+            have e' :
+             ((ιNatTrans f).app ((CategoryTheory.inv (A.map f)).obj ay) ≫
+              (ι A y).map (cast _ (𝟙 ay))) = Functor.id _ := sorry
+            simp [toGrpd_map_comp]
+            simp[← Functor.comp_map]
+            have e1 := CategoryTheory.NatTrans.naturality (ιNatTrans f) f
+            simp[← Functor.comp_map]
+            #check (id (id (⋯.mpr (⋯.mpr (𝟙 ay)))))
+            have e := (ι A y).map_id
+
+            -- simp only [Functor.comp_obj, forgetToGrpd_obj, eq_mpr_eq_cast, cast_cast, id_eq,
+            --   Functor.comp_map, forgetToGrpd_map]
+            simp only [Functor.map_id]
+
+            simp[CategoryTheory.Grpd.forgetToCat];
+            simp[lamAbeta.pt0,sigmaMap,sigmaMap];
+            rw[PointedGroupoid.pt]
+
+            sorry⟩
+
 
         --  {
         --    base := sorry
@@ -646,8 +597,6 @@ def lamAbeta : Γ ⥤ PGrpd.{u₁,u₁} where
        }
       map_id := sorry
       map_comp := sorry
-
-end
 
 def smallUPi.lam : smallU.{v}.Ptp.obj smallU.{v}.Tm ⟶ smallU.{v}.Tm :=
   NatTrans.yonedaMk sorry sorry
