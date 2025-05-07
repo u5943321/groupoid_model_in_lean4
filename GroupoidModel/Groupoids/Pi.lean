@@ -524,6 +524,34 @@ lemma lift_obj' {C:Type*}[Category C](A: Γ  ⥤ Cat) (fst: C ⥤ PCat) (snd: C�
  (Grothendieck.IsMegaPullback.lift fst snd w).obj x =
  ⟨ snd.obj x , ((eqToHom w).app x).obj (Grothendieck.IsMegaPullback.pt fst x) ⟩ := rfl
 
+lemma forSigmaFile' {x y : Γ} (f: x ⟶ y) :
+    sec ((ι A x ⋙ β) ⋙ forgetToGrpd) (ι A x ⋙ β) rfl
+    ⋙ (sigma A (β ⋙ forgetToGrpd)).map f =
+    Grothendieck.Groupoidal.IsMegaPullback.lift
+    (A.map f ⋙ ι A y ⋙ β)
+    (A.map f) rfl := by
+  apply Grothendieck.Groupoidal.IsMegaPullback.lift_uniq
+  · sorry
+  · rfl
+
+lemma forSigmaFile'' {x y : Γ} (f: x ⟶ y) :
+    A.map f
+    ⋙ sec ((ι A y ⋙ β) ⋙ forgetToGrpd) (ι A y ⋙ β) rfl =
+    Grothendieck.Groupoidal.IsMegaPullback.lift
+    (A.map f ⋙ ι A y ⋙ β)
+    (A.map f) rfl := by
+  apply Grothendieck.Groupoidal.IsMegaPullback.lift_uniq
+  · rw [Functor.assoc, sec_toPGrpd]
+  · rw [Functor.assoc, Grothendieck.Groupoidal.sec_forget]
+    rfl
+
+lemma forSigmaFile {x y : Γ} (f: x ⟶ y) :
+    sec ((ι A x ⋙ β) ⋙ forgetToGrpd) (ι A x ⋙ β) rfl
+    ⋙ (sigma A (β ⋙ forgetToGrpd)).map f =
+    A.map f
+    ⋙ sec ((ι A y ⋙ β) ⋙ forgetToGrpd) (ι A y ⋙ β) rfl := by
+  rw [forSigmaFile', forSigmaFile'']
+
 lemma lamAbeta_natural {x y:Γ} (f: x⟶ y)
 --  (h : β ⋙ forgetToGrpd =
 --      (Grothendieck.Groupoidal.toPGrpd) A ⋙ forgetToGrpd)
@@ -536,37 +564,40 @@ lemma lamAbeta_natural {x y:Γ} (f: x⟶ y)
   ((lamAbeta.pt β x).obj ≫ (sigma A (β ⋙ forgetToGrpd)).map f).obj c = (A.map f ≫ (lamAbeta.pt β y).obj).obj c
  := by
      intro ax
-     simp only[lamAbeta.pt_obj,lamAbeta.ptFunc,Grothendieck.Groupoidal.sec]
-     simp only[Grothendieck.Groupoidal.IsMegaPullback.lift]
-     simp
-     simp?[lift_obj']
-     simp[sigmaMap]
-     #check Grothendieck.Groupoidal.pre_obj_base
-     simp only[Grothendieck.Groupoidal.pre]
-     simp[Grothendieck.IsMegaPullback.pt]
-     simp[Grothendieck.pre] --when would I use which namespace?
-     congr
-     simp[ιNatTrans,Grothendieck.ιNatTrans ];
-     --should use beta,map { base := f, fiber := 𝟙 ((Grpd.forgetToCat.map (A.map f)).obj ax) } is a functor to pointed category
-     unfold  PointedCategory.pt
-     set h1 :
-     have e := @
-     (β.map { base := f, fiber := 𝟙 ((Grpd.forgetToCat.map (A.map f)).obj ax) }).point
-
-     simp[pt]
-
-
-
-     have e := NatTrans.naturality (ιNatTrans f)  f
-     --simp[lamAbeta.pt]
-     apply h
-
-
-     simp only[Grothendieck.Groupoidal.pre]
-     apply CategoryTheory.Grothendieck.ext
-     simp[sigmaMap]
-
+     -- rw [lamAbeta.pt_obj, lamAbeta.ptFunc, forSigmaFile]
+     
      sorry
+     -- simp only[lamAbeta.pt_obj,lamAbeta.ptFunc,Grothendieck.Groupoidal.sec]
+     -- simp only[Grothendieck.Groupoidal.IsMegaPullback.lift]
+     -- simp
+     -- simp?[lift_obj']
+     -- simp[sigmaMap]
+     -- #check Grothendieck.Groupoidal.pre_obj_base
+     -- simp only[Grothendieck.Groupoidal.pre]
+     -- simp[Grothendieck.IsMegaPullback.pt]
+     -- simp[Grothendieck.pre] --when would I use which namespace?
+     -- congr
+     -- simp[ιNatTrans,Grothendieck.ιNatTrans ];
+     -- --should use beta,map { base := f, fiber := 𝟙 ((Grpd.forgetToCat.map (A.map f)).obj ax) } is a functor to pointed category
+     -- unfold  PointedCategory.pt
+     -- set h1 :
+     -- have e := @
+     -- (β.map { base := f, fiber := 𝟙 ((Grpd.forgetToCat.map (A.map f)).obj ax) }).point
+
+     -- simp[pt]
+
+
+
+     -- have e := NatTrans.naturality (ιNatTrans f)  f
+     -- --simp[lamAbeta.pt]
+     -- apply h
+
+
+     -- simp only[Grothendieck.Groupoidal.pre]
+     -- apply CategoryTheory.Grothendieck.ext
+     -- simp[sigmaMap]
+
+     -- sorry
   fapply NatTrans_to_Functor_eq
   · exact {
     app ax := {
