@@ -558,6 +558,15 @@ lemma lamAbeta_natural {x y:Γ} (f: x⟶ y)
      :
     (lamAbeta.pt β x).obj ≫ (sigma A (β ⋙ forgetToGrpd)).map f =
      A.map f ≫ (lamAbeta.pt β y).obj := by
+    simp[lamAbeta.pt,lamAbeta.ptFunc]
+    simp only[Grothendieck.Groupoidal.sec_naturality]
+    simp[sigmaMap]
+    simp[← CategoryTheory.Functor.assoc]
+    congr
+    simp[Grothendieck.Groupoidal.sec]
+    apply Grothendieck.Groupoidal.IsMegaPullback.lift_uniq
+    · sorry
+    · sorry
   -- simp[sigma,sigmaMap]
   -- simp[← Functor.assoc]
   have g1:  ∀ (c : ↑(A.obj x)),
@@ -565,7 +574,7 @@ lemma lamAbeta_natural {x y:Γ} (f: x⟶ y)
  := by
      intro ax
      -- rw [lamAbeta.pt_obj, lamAbeta.ptFunc, forSigmaFile]
-     
+     simp[ιNatTrans,Grothendieck.ιNatTrans ]
      sorry
      -- simp only[lamAbeta.pt_obj,lamAbeta.ptFunc,Grothendieck.Groupoidal.sec]
      -- simp only[Grothendieck.Groupoidal.IsMegaPullback.lift]
