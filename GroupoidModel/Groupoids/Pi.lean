@@ -8,8 +8,33 @@ noncomputable section
 section ForOther
 namespace CategoryTheory
 
+lemma fullSubcategoryInclusion_Mono_lemma {T C:Type u}
+   [Category.{v} C] [Category.{v} T]  (Z: C → Prop)
+ (f g: T ⥤ FullSubcategory Z)
+ (e: f ⋙ (fullSubcategoryInclusion Z) = g ⋙ (fullSubcategoryInclusion Z)) : f = g := by
+  let iso:= eqToIso e
+  let fgiso := CategoryTheory.Functor.fullyFaithfulCancelRight (fullSubcategoryInclusion Z) iso
+  have p : ∀ (X : T), f.obj X = g.obj X := by
+    intro X
+    have e1: (f ⋙ fullSubcategoryInclusion Z).obj X = (g ⋙ fullSubcategoryInclusion Z).obj X
+     := Functor.congr_obj e X
+    simp only [Functor.comp_obj, fullSubcategoryInclusion.obj] at e1
+    ext
+    exact e1
+  fapply CategoryTheory.Functor.ext_of_iso fgiso
+  · exact p
+  intro X
+  simp only [Functor.fullyFaithfulCancelRight, NatIso.ofComponents_hom_app, Functor.preimageIso_hom,
+    fullSubcategoryInclusion.obj, Iso.app_hom, fgiso]
+  have e2: (fullSubcategoryInclusion Z).map (eqToHom (p X)) = (iso.hom.app X) := by
+    simp only [fullSubcategoryInclusion, inducedFunctor_obj, inducedFunctor_map, eqToIso.hom,
+      eqToHom_app, Functor.comp_obj, iso, fgiso]
+    rfl
+  simp only[← e2,Functor.preimage, fullSubcategoryInclusion.obj, fullSubcategoryInclusion.map,
+    Classical.choose_eq, fgiso, iso]
 -- NOTE is there a better way of doing this?
 -- NOTE associativity of functors is definitional, so we can always use `rfl`
+
 lemma func_middle_assoc {A B C D E: Type*} [Category A][Category B][Category C][Category D][Category E]
  (f1: A ⥤ B) (f2: B ⥤ C) (f3: C ⥤ D)(f4: D⥤ E):
  f1 ⋙ f2 ⋙ f3 ⋙ f4 = f1 ⋙ (f2 ⋙ f3) ⋙ f4 := rfl
@@ -106,7 +131,7 @@ def conjugating_id {Γ : Type u} [Groupoid.{v} Γ] (A B : Γ ⥤ Cat)
      have e': (𝟙 (A.obj x)) = (𝟭 (A.obj x)) := rfl
      simp only[e',CategoryTheory.whiskeringLeft_obj_id]
 
-def conjugating_comp {Γ : Grpd.{v,u}} (A B : Γ ⥤ Cat)
+def conjugating_comp {Γ : Type u} [Groupoid.{v} Γ] (A B : Γ ⥤ Cat)
     (x y z : Γ ) (f:x⟶ y) (g:y⟶ z) :
     conjugating A B (f ≫ g) = conjugating A B f ⋙ conjugating A B g := by
     simp only [conjugating, inv_eq_inv, IsIso.inv_comp, Functor.map_comp, Functor.map_inv]
@@ -179,33 +204,33 @@ theorem Section.ext {A:Type u} [Category.{v ,u} A] {B : Type u₁}
 open FunctorOperation
 
 -- TODO camelCase
-def Fiber_Grpd {Γ : Grpd.{v₂,u₂}} (A : Γ ⥤ Grpd.{v₁,u₁})
+def Fiber_Grpd {Γ : Type u} [Groupoid.{v} Γ] (A : Γ ⥤ Grpd.{v₁,u₁})
     (B : ∫(A) ⥤ Grpd.{v₁,u₁}) (x : Γ) : Grpd :=
   Section.grpd ((fstAux B).app x)
 
 -- TODO lower case (and so on)
-lemma Fiber_Grpd.α {Γ : Grpd.{v₂,u₂}} (A : Γ ⥤ Grpd.{v₁,u₁})
+lemma Fiber_Grpd.α {Γ : Type u} [Groupoid.{v} Γ] (A : Γ ⥤ Grpd.{v₁,u₁})
     (B : ∫(A) ⥤ Grpd.{v₁,u₁}) (x : Γ) :
     (Fiber_Grpd A B x).α = Section ((fstAux B).app x) := rfl
 
 -- TODO JH: maybe not all of these ext lemmas are needed
-theorem Fiber_Grpd.ext {Γ : Grpd.{v₂,u₂}} (A : Γ ⥤ Grpd.{v₁,u₁})
+theorem Fiber_Grpd.ext {Γ : Type u} [Groupoid.{v} Γ] (A : Γ ⥤ Grpd.{v₁,u₁})
     (B : ∫(A) ⥤ Grpd.{v₁,u₁}) (x : Γ) (s t : Fiber_Grpd A B x)
     (h : s.obj = t.obj) : s = t := by
   apply Section.ext
   assumption
 
-def conjugate {D: Type*} (C: Grpd.{v₁,u₁}) [Category D] (A B : C ⥤ D)
+def conjugate {D: Type*} (C: Type u) [Groupoid.{v} C] [Category D] (A B : C ⥤ D)
     {x y: C} (f: x ⟶ y) (s: A.obj x ⟶  B.obj x) :
      A.obj y ⟶  B.obj y := A.map (Groupoid.inv f) ≫ s ≫ B.map f
 
 
-lemma conjugate_id {D: Type*} (C: Grpd.{v₁,u₁}) [Category D] (A B : C ⥤ D)
+lemma conjugate_id {D: Type*} (C: Type u) [Groupoid.{v} C] [Category D] (A B : C ⥤ D)
     (x : C) (s: A.obj x ⟶  B.obj x)  : conjugate C A B (𝟙 x) s = s:= by
      simp only [conjugate, inv_eq_inv, IsIso.inv_id, CategoryTheory.Functor.map_id,
        Category.comp_id, Category.id_comp]
 
-lemma conjugate_comp {D: Type*} (C: Grpd.{v₁,u₁}) [Category D] (A B : C ⥤ D)
+lemma conjugate_comp {D: Type*} {C : Type u} [Groupoid.{v} C] [Category D] (A B : C ⥤ D)
     {x y z: C} (f: x ⟶ y) (g: y ⟶ z) (s: A.obj x ⟶  B.obj x):
      conjugate C A B (f ≫ g) s = conjugate C A B g (conjugate C A B f s) := by
       simp only [conjugate, inv_eq_inv, IsIso.inv_comp, Functor.map_comp, Functor.map_inv,
@@ -214,7 +239,7 @@ lemma conjugate_comp {D: Type*} (C: Grpd.{v₁,u₁}) [Category D] (A B : C ⥤ 
 /-only need naturality of η-/
 /-therefore, the fact that the conjugation sends section to section is by naturality of
  the projection map from sigma, and the fact that some functor has sections as its codomain-/
-lemma conjugate_PreserveSection {D: Type*} (C: Grpd.{v₁,u₁}) [Category D] (A B : C ⥤ D)
+lemma conjugate_PreserveSection {D: Type*} (C: Type u) [Groupoid.{v} C] [Category D] (A B : C ⥤ D)
     (η: NatTrans B A)
     {x y: C} (f: x ⟶ y) (s: A.obj x ⟶  B.obj x):
     s ≫ η.app x = 𝟙 (A.obj x) → (conjugate C A B f s) ≫ η.app y = 𝟙 (A.obj y) :=
@@ -225,14 +250,14 @@ lemma conjugate_PreserveSection {D: Type*} (C: Grpd.{v₁,u₁}) [Category D] (A
      simp only [Category.assoc, NatTrans.naturality, IsIso.inv_comp_eq, Category.comp_id]
      simp only [← Category.assoc,ieq,Category.id_comp]
 
-def conjugate_Fiber {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
+def conjugate_Fiber {Γ : Type u} [Groupoid.{v} Γ] (A : Γ ⥤ Grpd.{u₁,u₁})
     (B : ∫(A) ⥤ Grpd.{u₁,u₁})
     {x y: Γ} (f: x ⟶ y)
     (s: A.obj x ⥤ (GroupoidModel.FunctorOperation.sigma A B).obj x) :
     (A.obj y ⥤ (GroupoidModel.FunctorOperation.sigma A B).obj y) :=
     conjugate Γ A (GroupoidModel.FunctorOperation.sigma A B) f s
 
-def conjugate_FiberFunc {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
+def conjugate_FiberFunc  {Γ : Type u} [Groupoid.{v} Γ] (A : Γ ⥤ Grpd.{u₁,u₁})
     (B : ∫(A) ⥤ Grpd.{u₁,u₁})
     {x y: Γ} (f: x ⟶ y):
     (A.obj x ⥤ (GroupoidModel.FunctorOperation.sigma A B).obj x) ⥤
@@ -240,13 +265,13 @@ def conjugate_FiberFunc {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
      conjugating (A ⋙ Grpd.forgetToCat)
       (GroupoidModel.FunctorOperation.sigma A B ⋙ Grpd.forgetToCat) f
 
-lemma conjugate_FiberFunc.obj {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
+lemma conjugate_FiberFunc.obj {Γ : Type u} [Groupoid.{v} Γ] (A : Γ ⥤ Grpd.{u₁,u₁})
     (B : ∫(A) ⥤ Grpd.{u₁,u₁})
     {x y: Γ} (f: x ⟶ y):
      (conjugate_FiberFunc A B f).obj = conjugate _ A (FunctorOperation.sigma A B) f
      := rfl
 
-lemma conjugate_FiberFunc.map {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
+lemma conjugate_FiberFunc.map {Γ : Type u} [Groupoid.{v} Γ]  (A : Γ ⥤ Grpd.{u₁,u₁})
     (B : ∫(A) ⥤ Grpd.{u₁,u₁})
     {x y: Γ} (f: x ⟶ y)
     (s1 s2: A.obj x ⥤ (GroupoidModel.FunctorOperation.sigma A B).obj x)
@@ -257,7 +282,7 @@ lemma conjugate_FiberFunc.map {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
          ((GroupoidModel.FunctorOperation.sigma A B).map f))
      := rfl
 
-def conjugateLiftCond {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
+def conjugateLiftCond {Γ : Type u} [Groupoid.{v} Γ] (A : Γ ⥤ Grpd.{u₁,u₁})
     (B : ∫(A) ⥤ Grpd.{u₁,u₁})
     {x y: Γ} (f: x ⟶ y):
     ∀ (X : Section ((fstAux B).app x)),
@@ -273,8 +298,9 @@ def conjugateLiftCond {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
                 (fstAux B) f _ a
       assumption
 
-
-def conjugateLiftFunc {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
+section
+variable {Γ : Type u} [Groupoid.{v} Γ] (A : Γ ⥤ Grpd.{u₁,u₁})
+def conjugateLiftFunc
     (B : ∫(A) ⥤ Grpd.{u₁,u₁})
     {x y: Γ} (f: x ⟶ y):
      Section ((fstAux B).app x) ⥤ Section ((fstAux B).app y) :=
@@ -283,15 +309,13 @@ def conjugateLiftFunc {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
      (conjugateLiftCond A B f)
 
 
-lemma conjugateLiftFunc.obj {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
+lemma conjugateLiftFunc.obj
     (B : ∫(A) ⥤ Grpd.{u₁,u₁})
     {x y: Γ} (f: x ⟶ y) (s: Section ((fstAux B).app x)):
     ((conjugateLiftFunc A B f).obj s).obj =
     (conjugate_FiberFunc A B f).obj s.obj := rfl
 
-
-
-lemma conjugateLiftFunc.map {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
+lemma conjugateLiftFunc.map
     (B : ∫(A) ⥤ Grpd.{u₁,u₁})
     {x y: Γ} (f: x ⟶ y) (s1 s2: Section ((fstAux B).app x))
     (η: s1 ⟶ s2):
@@ -300,7 +324,7 @@ lemma conjugateLiftFunc.map {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
     (conjugate_FiberFunc A B f).map η := rfl
 
 
-lemma conjugateLiftFunc_Inc {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
+lemma conjugateLiftFunc_Inc
     (B : ∫(A) ⥤ Grpd.{u₁,u₁})
     {x y: Γ} (f: x ⟶ y):
     (conjugateLiftFunc A B f) ⋙ Section.inc ((fstAux B).app y)
@@ -309,8 +333,7 @@ lemma conjugateLiftFunc_Inc {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
      simp only [FunctorOperation.sigma_obj, Grpd.coe_of, conjugateLiftFunc, Section.inc,
        FullSubcategory.lift_comp_inclusion_eq]
 
-lemma idSection_Inc {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
-    (B : ∫(A) ⥤ Grpd.{u₁,u₁})
+lemma idSection_Inc (B : ∫(A) ⥤ Grpd.{u₁,u₁})
     (x : Γ) :
     𝟙 (Fiber_Grpd A B x) ⋙ Section.inc ((fstAux B).app x)
     = ((Section.inc ((fstAux B).app x) ⋙ conjugate_FiberFunc A B (𝟙 x))) :=
@@ -319,34 +342,7 @@ lemma idSection_Inc {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
      rw[conjugate_FiberFunc,conjugating_id]
      rfl
 
-
-lemma fullSubcategoryInclusion_Mono_lemma {T C:Type u}
-   [Category.{v} C] [Category.{v} T]  (Z: C → Prop)
- (f g: T ⥤ FullSubcategory Z)
- (e: f ⋙ (fullSubcategoryInclusion Z) = g ⋙ (fullSubcategoryInclusion Z)) : f = g := by
-  let iso:= eqToIso e
-  let fgiso := CategoryTheory.Functor.fullyFaithfulCancelRight (fullSubcategoryInclusion Z) iso
-  have p : ∀ (X : T), f.obj X = g.obj X := by
-    intro X
-    have e1: (f ⋙ fullSubcategoryInclusion Z).obj X = (g ⋙ fullSubcategoryInclusion Z).obj X
-     := Functor.congr_obj e X
-    simp only [Functor.comp_obj, fullSubcategoryInclusion.obj] at e1
-    ext
-    exact e1
-  fapply CategoryTheory.Functor.ext_of_iso fgiso
-  · exact p
-  intro X
-  simp only [Functor.fullyFaithfulCancelRight, NatIso.ofComponents_hom_app, Functor.preimageIso_hom,
-    fullSubcategoryInclusion.obj, Iso.app_hom, fgiso]
-  have e2: (fullSubcategoryInclusion Z).map (eqToHom (p X)) = (iso.hom.app X) := by
-    simp only [fullSubcategoryInclusion, inducedFunctor_obj, inducedFunctor_map, eqToIso.hom,
-      eqToHom_app, Functor.comp_obj, iso, fgiso]
-    rfl
-  simp only[← e2,Functor.preimage, fullSubcategoryInclusion.obj, fullSubcategoryInclusion.map,
-    Classical.choose_eq, fgiso, iso]
-
 lemma conjugateLiftFunc_id
-    {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
     (B : ∫(A) ⥤ Grpd.{u₁,u₁})
     (x: Γ) : conjugateLiftFunc A B (𝟙 x) = 𝟙 (Fiber_Grpd A B x) :=
      by
@@ -355,7 +351,6 @@ lemma conjugateLiftFunc_id
         idSection_Inc A B x]
 
 lemma conjugateLiftFunc_comp
-    {Γ : Grpd.{v,u}} (A : Γ ⥤ Grpd.{u₁,u₁})
     (B : ∫(A) ⥤ Grpd.{u₁,u₁})
     {x y z: Γ} (f : x ⟶ y) (g : y ⟶ z):
     conjugateLiftFunc A B (f ≫ g) =  (conjugateLiftFunc A B f) ⋙ (conjugateLiftFunc A B g) := by
@@ -370,11 +365,11 @@ lemma conjugateLiftFunc_comp
      simp only [Functor.assoc, ← conjugating_comp (A ⋙ Grpd.forgetToCat),
                 conjugateLiftFunc_Inc A B (f ≫ g),conjugate_FiberFunc]
     refine e
-
+end
 /-- The formation rule for Σ-types for the ambient natural model `base`
   unfolded into operations between functors -/
 
-def pi {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
+def pi {Γ : Type u} [Groupoid.{v} Γ] {A : Γ ⥤ Grpd.{u₁,u₁}}
     (B : ∫(A) ⥤ Grpd.{u₁,u₁})
     : Γ ⥤ Grpd.{u₁,u₁} where
       obj x := Fiber_Grpd A B x
@@ -398,7 +393,7 @@ def smallUPi.Pi : smallU.{v}.Ptp.obj smallU.{v}.Ty ⟶ smallU.{v}.Ty :=
 
 
 section
-variable {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}} (β  : ∫(A) ⥤ PGrpd.{u₁,u₁})
+variable {Γ : Type u} [Groupoid.{v} Γ] {A : Γ ⥤ Grpd.{u₁,u₁}} (β  : ∫(A) ⥤ PGrpd.{u₁,u₁})
 
 def lamAbeta.pt0
     (x: Γ ) (a: A.obj x)
@@ -469,35 +464,35 @@ lemma lamAbeta.pt_obj (x : Γ) :
 def lamAbetaSectionObj (x : Γ) : ∫(pi (β ⋙ forgetToGrpd)) :=
   objMk x (lamAbeta.pt β x)
 
-
-
-lemma inv_map {Γ : Grpd.{v,u}}  {A : Γ ⥤ Grpd.{u₁,u₁}} {x y: Γ } (f: x ⟶ y):
+section
+variable {Γ : Type u} [Groupoid.{v} Γ] {A : Γ ⥤ Grpd.{u₁,u₁}}
+-- This should be Γ : Type* with a Groupoid instance
+lemma inv_map {x y: Γ } (f: x ⟶ y):
 CategoryTheory.inv (A.map f) = A.map (Groupoid.inv f):= by
  simp_all only [inv_eq_inv, Functor.map_inv]
 
 -- lemma toGrpd_comp_obj {Γ : Grpd.{v,u}} {A : Γ ⥤ Grpd.{u₁,u₁}}
 --  {x y z: Γ } (f: x ⟶ y) (g: y ⟶ z):
 --   (A.map f).obj ((A.map (Groupoid.inv f)).obj ay)
-#check  Cat.comp_obj
-lemma toGrpd_map_inv_comp
-{Γ : Grpd.{v,u}}  {A : Γ ⥤ Grpd.{u₁,u₁}} {x y: Γ } (f: x ⟶ y):
+
+lemma toGrpd_map_inv_comp {x y: Γ } (f: x ⟶ y):
  (A.map (Groupoid.inv f) ≫  A.map f) = Functor.id _ := by
    have e := A.map_comp (Groupoid.inv f) f
    rw[← e]
    simp
 
 
-lemma toGrpd_map_inv_comp'
-{Γ : Grpd.{v,u}}  {A : Γ ⥤ Grpd.{u₁,u₁}} {x y: Γ } (f: x ⟶ y):
+lemma toGrpd_map_inv_comp' {x y: Γ } (f: x ⟶ y):
  (A.map (Groupoid.inv f) ⋙ A.map f) = Functor.id _ := by
   apply toGrpd_map_inv_comp
 
 
-lemma toGrpd_map_inv_comp''
-{Γ : Grpd.{v,u}}  {A : Γ ⥤ Grpd.{u₁,u₁}} {x y: Γ } (f: x ⟶ y):
+lemma toGrpd_map_inv_comp'' {x y: Γ } (f: x ⟶ y):
  (CategoryTheory.inv (A.map f) ⋙ A.map f) = Functor.id _ := by
   simp only[inv_map]
   apply toGrpd_map_inv_comp
+
+end
 
 lemma NatTrans_to_Functor_eq {C D: Type*} [Category C] [Category D] (F G: C⥤ D)
 (η: F ⟶ G)
@@ -512,14 +507,7 @@ lemma NatTrans_to_Functor_eq {C D: Type*} [Category C] [Category D] (F G: C⥤ D
    simp only[← CategoryTheory.comp_eqToHom_iff (p c2)]
    assumption
 
-
-
-#check sigmaMap
-#check CategoryTheory.Grothendieck.Groupoidal.IsMegaPullback.lift
-
-
-
-lemma lift_obj' {C:Type*}[Category C](A: Γ  ⥤ Cat) (fst: C ⥤ PCat) (snd: C⥤ Γ ) (w : fst ⋙ PCat.forgetToCat = snd ⋙ A)
+lemma lift_obj' {C:Type*} [Category C] (A : Γ ⥤ Cat) (fst: C ⥤ PCat) (snd: C⥤ Γ ) (w : fst ⋙ PCat.forgetToCat = snd ⋙ A)
   (x: C):
  (Grothendieck.IsMegaPullback.lift fst snd w).obj x =
  ⟨ snd.obj x , ((eqToHom w).app x).obj (Grothendieck.IsMegaPullback.pt fst x) ⟩ := rfl
@@ -545,12 +533,65 @@ lemma forSigmaFile'' {x y : Γ} (f: x ⟶ y) :
   · rw [Functor.assoc, Grothendieck.Groupoidal.sec_forget]
     rfl
 
+-- NOTE remove or rename sec_sigma
 lemma forSigmaFile {x y : Γ} (f: x ⟶ y) :
     sec ((ι A x ⋙ β) ⋙ forgetToGrpd) (ι A x ⋙ β) rfl
     ⋙ (sigma A (β ⋙ forgetToGrpd)).map f =
     A.map f
     ⋙ sec ((ι A y ⋙ β) ⋙ forgetToGrpd) (ι A y ⋙ β) rfl := by
   rw [forSigmaFile', forSigmaFile'']
+
+-- lemma PCat.
+
+-- TODO make `Grothendieck.sec`
+-- TODO state this lemma in terms of `Grothendieck.sec`
+lemma Grothendieck.sec_map_whisker {Γ : Type*} [Category Γ] {A : ↑Γ ⥤ Cat} (β : Grothendieck A ⥤ PCat) {x y : Γ} (f : x ⟶ y) :
+    Grothendieck.IsMegaPullback.lift (Grothendieck.ι A x ⋙ β) (Functor.id (A.obj x)) rfl ⋙
+        Grothendieck.map (whiskerRight (Grothendieck.ιNatTrans f) (β ⋙ PCat.forgetToCat)) =
+      Grothendieck.IsMegaPullback.lift ((A.map f ⋙ Grothendieck.ι A y) ⋙ β) (Functor.id (A.obj x)) rfl := by
+  fapply CategoryTheory.Functor.ext
+  · intro a
+    apply Grothendieck.obj_ext_hEq
+    · simp [Grothendieck.IsMegaPullback.lift]
+    · -- NOTE: some simp lemmas that unfold too far
+      -- or just don't help include
+      -- ι_obj, Grothendieck.IsMegaPullback.lift_obj_base, Functor.id_obj, PCat.forgetToCat_obj, Cat.of_α, PCat.forgetToCat_map,
+      simp only [Grothendieck.IsMegaPullback.lift, Functor.comp_obj, Grothendieck.map_obj_base,
+  Grothendieck.IsMegaPullback.lift_obj_base, Functor.id_obj,
+  Grothendieck.map_obj_fiber, whiskerRight_app,
+  Grothendieck.IsMegaPullback.lift_obj_fiber, eqToHom_refl, NatTrans.id_app, Cat.id_obj, heq_eq_eq]
+      dsimp only [Grothendieck.IsMegaPullback.pt]
+      -- NOTE: would be good if PointedCategory.pt
+      -- in the goal here reads as the unfolded version
+      unfold PointedCategory.pt
+      dsimp [Grothendieck.ιNatTrans, Grothendieck.ι]
+      sorry
+  · sorry
+
+lemma sec_map_whisker {x y : Γ} (f: x ⟶ y) :
+    sec ((ι A x ⋙ β) ⋙ forgetToGrpd) (ι A x ⋙ β) rfl ⋙
+    map (whiskerRight (ιNatTrans f) (β ⋙ forgetToGrpd)) =
+    sec (((A.map f ⋙ ι A y) ⋙ β) ⋙ forgetToGrpd) ((A.map f ⋙ ι A y) ⋙ β) rfl :=
+  Grothendieck.sec_map_whisker (β ⋙ PGrpd.forgetToPCat) f
+
+#check Grothendieck.Groupoidal.ι
+lemma sec_sigma {x y : Γ} (f: x ⟶ y) :
+    sec ((ι A x ⋙ β) ⋙ forgetToGrpd) (ι A x ⋙ β) rfl
+    ⋙ (sigma A (β ⋙ forgetToGrpd)).map f =
+    A.map f
+    ⋙ sec ((ι A y ⋙ β) ⋙ forgetToGrpd) (ι A y ⋙ β) rfl := by
+    simp only[Grothendieck.Groupoidal.sec_naturality]
+    simp only [sigma_obj, sigmaObj, Grpd.coe_of, sigma_map,
+      sigmaMap]
+    simp only [← CategoryTheory.Functor.assoc]
+    congr
+    simp only [Grothendieck.Groupoidal.sec]
+    -- apply Grothendieck.Groupoidal.IsMegaPullback.lift_uniq
+    -- · 
+    --   sorry
+    -- · sorry
+    generalize_proofs
+    sorry
 
 lemma lamAbeta_natural {x y:Γ} (f: x⟶ y)
 --  (h : β ⋙ forgetToGrpd =
@@ -559,23 +600,16 @@ lemma lamAbeta_natural {x y:Γ} (f: x⟶ y)
     (lamAbeta.pt β x).obj ≫ (sigma A (β ⋙ forgetToGrpd)).map f =
      A.map f ≫ (lamAbeta.pt β y).obj := by
     simp[lamAbeta.pt,lamAbeta.ptFunc]
-    simp only[Grothendieck.Groupoidal.sec_naturality]
-    simp[sigmaMap]
-    simp[← CategoryTheory.Functor.assoc]
-    congr
-    simp[Grothendieck.Groupoidal.sec]
-    apply Grothendieck.Groupoidal.IsMegaPullback.lift_uniq
-    · sorry
-    · sorry
+    erw [sec_sigma β f]
   -- simp[sigma,sigmaMap]
   -- simp[← Functor.assoc]
-  have g1:  ∀ (c : ↑(A.obj x)),
-  ((lamAbeta.pt β x).obj ≫ (sigma A (β ⋙ forgetToGrpd)).map f).obj c = (A.map f ≫ (lamAbeta.pt β y).obj).obj c
- := by
-     intro ax
-     -- rw [lamAbeta.pt_obj, lamAbeta.ptFunc, forSigmaFile]
-     simp[ιNatTrans,Grothendieck.ιNatTrans ]
-     sorry
+ --  have g1:  ∀ (c : ↑(A.obj x)),
+ --  ((lamAbeta.pt β x).obj ≫ (sigma A (β ⋙ forgetToGrpd)).map f).obj c = (A.map f ≫ (lamAbeta.pt β y).obj).obj c
+ -- := by
+ --     intro ax
+ --     -- rw [lamAbeta.pt_obj, lamAbeta.ptFunc, forSigmaFile]
+ --     simp[ιNatTrans,Grothendieck.ιNatTrans ]
+ --     sorry
      -- simp only[lamAbeta.pt_obj,lamAbeta.ptFunc,Grothendieck.Groupoidal.sec]
      -- simp only[Grothendieck.Groupoidal.IsMegaPullback.lift]
      -- simp
@@ -607,18 +641,18 @@ lemma lamAbeta_natural {x y:Γ} (f: x⟶ y)
      -- simp[sigmaMap]
 
      -- sorry
-  fapply NatTrans_to_Functor_eq
-  · exact {
-    app ax := {
-      base := by
-        simp[lamAbeta.pt_obj,lamAbeta.ptFunc]
-        sorry
-      fiber := sorry
-    }
-    naturality := sorry
-  }
-  · exact g1
-  · sorry
+  -- fapply NatTrans_to_Functor_eq
+  -- · exact {
+  --   app ax := {
+  --     base := by
+  --       simp[lamAbeta.pt_obj,lamAbeta.ptFunc]
+  --       sorry
+  --     fiber := sorry
+  --   }
+  --   naturality := sorry
+  -- }
+  -- · exact g1
+  -- · sorry
   -- have e : (sigma A (β ⋙ forgetToGrpd)).map
   -- sorry
 

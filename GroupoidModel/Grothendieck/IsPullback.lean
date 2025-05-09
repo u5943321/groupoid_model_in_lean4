@@ -74,7 +74,8 @@ abbrev point {x y : C} (f : x ⟶ y) :
 
 variable {A} {fst} {snd}
 
-@[simp] def lift_obj (x : C) : Grothendieck A :=
+-- NOTE this used to be `simp` which is bad
+@[simps] def lift_obj (x : C) : Grothendieck A :=
   ⟨ snd.obj x , ((eqToHom w).app x).obj (pt fst x) ⟩
 
 variable {x y : C} (f : x ⟶ y)
@@ -181,7 +182,8 @@ def lift : C ⥤ Grothendieck A where
       simp
     · simp
 
-lemma lift_obj' (x: C):
+-- NOTE JH: this should probably go?
+lemma lift_obj_apply (x: C):
  (lift fst snd w).obj x = ⟨ snd.obj x , ((eqToHom w).app x).obj (pt fst x) ⟩ := rfl
 
 @[simp] theorem fac_right : lift fst snd w ⋙ Grothendieck.forget A = snd := by
