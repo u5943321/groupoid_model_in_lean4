@@ -448,6 +448,16 @@ def lamAbeta.ptFunc (x : Γ) :
       -- map_comp := sorry
 
 
+lemma lamAbeta.ptFunc.obj (x : Γ) (ax: A.obj x):
+ (lamAbeta.ptFunc β x).obj ax = objMk ax (((ι A x ⋙ β)).obj ax).str.pt := by
+  have h := (((ι A x ⋙ β)).obj ax).str.pt
+
+  unfold lamAbeta.ptFunc
+  rfl
+  --sorry
+  --Grothendieck.Groupoidal.objMk x sorry
+  --(β.obj (Grothendieck.Groupoidal.objMk x ax))
+
 -- NOTE JH: not sure if we should have IsSec as a definition.
 -- Let's leave it for now though
 lemma sec_IsSec
@@ -464,12 +474,12 @@ def lamAbeta.pt (x : Γ)
 
 
 lemma lamAbeta.pt_obj (x : Γ) :
- (lamAbeta.pt β  x).obj= lamAbeta.ptFunc β x := rfl
+ (lamAbeta.pt β x).obj= lamAbeta.ptFunc β x := rfl
 
 def lamAbetaSectionObj (x : Γ) : ∫(pi (β ⋙ forgetToGrpd)) :=
   objMk x (lamAbeta.pt β x)
 
-
+lemma lamAbetaSectionObj.base (x : Γ) : (lamAbetaSectionObj β x).base = x := rfl
 
 lemma inv_map {Γ : Grpd.{v,u}}  {A : Γ ⥤ Grpd.{u₁,u₁}} {x y: Γ } (f: x ⟶ y):
 CategoryTheory.inv (A.map f) = A.map (Groupoid.inv f):= by
@@ -552,6 +562,11 @@ lemma forSigmaFile {x y : Γ} (f: x ⟶ y) :
     ⋙ sec ((ι A y ⋙ β) ⋙ forgetToGrpd) (ι A y ⋙ β) rfl := by
   rw [forSigmaFile', forSigmaFile'']
 
+
+-- theorem functor_comp_forget {C:Type*} [Category C] (F G: C⥤ Grpd) {α : F ⟶ G} :
+--     Grothendieck.map α ⋙ Grothendieck.forget G = @Grothendieck.forget C _ F := rfl
+
+
 lemma lamAbeta_natural {x y:Γ} (f: x⟶ y)
 --  (h : β ⋙ forgetToGrpd =
 --      (Grothendieck.Groupoidal.toPGrpd) A ⋙ forgetToGrpd)
@@ -565,8 +580,16 @@ lemma lamAbeta_natural {x y:Γ} (f: x⟶ y)
     congr
     simp[Grothendieck.Groupoidal.sec]
     apply Grothendieck.Groupoidal.IsMegaPullback.lift_uniq
-    · sorry
-    · sorry
+    · simp only[CategoryTheory.Functor.assoc]
+      sorry
+
+    · --apply @pairSection_comp_forget _ _ _ (ι A x ⋙ β)
+      --have e:= @Grothendieck.functor_comp_forget _ _ (ι A x ⋙ β ⋙ forgetToGrpd) _ (whiskerRight (ιNatTrans f) (β ⋙ forgetToGrpd))
+      simp[CategoryTheory.Functor.assoc]
+      simp[CategoryTheory.Grothendieck.Groupoidal.forget]
+      rw![Grothendieck.functor_comp_forget]
+      rfl
+
   -- simp[sigma,sigmaMap]
   -- simp[← Functor.assoc]
   have g1:  ∀ (c : ↑(A.obj x)),
@@ -624,23 +647,74 @@ lemma lamAbeta_natural {x y:Γ} (f: x⟶ y)
 
 def lamAbetaSection : Γ ⥤ ∫(pi (β ⋙ forgetToGrpd)) where
   obj := lamAbetaSectionObj _
-  map {x y} f := homMk f (eqToHom $ by
-   -- the two objects are in fact equal, as objects in the category of sections
-   apply Fiber_Grpd.ext
-   -- so now it suffices to just show equality between the underlying functors
-   dsimp only [pi, lamAbetaSectionObj, objMk_base, sigma_obj, sigmaObj, Grpd.coe_of, fstAux_app,
-     objMk_fiber, lamAbeta.pt_obj]
-   simp only[conjugateLiftFunc.obj,conjugate_FiberFunc.obj,conjugate]
-   have e : (lamAbeta.pt β x).obj ≫ (sigma A (β ⋙ forgetToGrpd)).map f =
-            A.map f ≫ (lamAbeta.pt β y).obj := lamAbeta_natural β f
-            -- Q:If I replace this lamAbeta_natural β f with sorry, and delete map_comp := sorry
-            --then Lean does not complain, why?
+  map {x y} f := homMk f {
+    app ay:= by
+      dsimp only [pi, lamAbetaSectionObj, objMk_base, sigma_obj, sigmaObj, Grpd.coe_of, fstAux_app,
+      objMk_fiber, lamAbeta.pt_obj]
+      simp[lamAbetaSectionObj.base] at ay
+      let yay:= Grothendieck.Groupoidal.objMk y ay
+      let xfinvay := Grothendieck.Groupoidal.objMk x ((A.map (Groupoid.inv f)).obj ay)
+      have h1 : xfinvay  ⟶  yay  := {
+        base := f
+        fiber := eqToHom (by
+           simp[yay,xfinvay];
+           sorry)
 
-   simp only[e]
-   simp[lamAbeta.pt]
-   simp[← CategoryTheory.Functor.assoc]
-   simp[toGrpd_map_inv_comp'']
-   rfl)
+      }
+      --simp[yay, xfinvay,objMk] at h1
+      simp[lamAbeta.ptFunc.obj,conjugateLiftFunc.obj]
+      unfold PointedGroupoid.pt
+      simp[conjugateLiftFunc.obj,conjugate_FiberFunc.obj]
+     -- simp[conjugate]
+      --have t1 : ∫(β) := objMk ay (β.obj ((ι A y).obj ay)).str.2
+      exact {
+        base := by
+          simp
+          sorry
+        fiber := sorry
+      }
+
+      exact {
+        base := Grothendieck.map (β ⋙ forgetToGrpd) f
+        fiber := sorry
+      }
+      rw![conjugateLiftFunc.obj]
+      rw![lamAbeta.pt_obj,lamAbeta.ptFunc]
+      let h0 := sigmaMap (β ⋙ forgetToGrpd) f
+      let h1 :=  (whiskerRight (ιNatTrans f) β)
+      let h2 :=  Grothendieck.pre (ι A y ⋙ β) (A.map f)
+      let h := Grothendieck.map h0
+      let h' := whiskerLeft (A.map f) h
+            simp
+
+
+           h
+    naturality := sorry
+  }
+  -- (by
+  --     dsimp only [pi, lamAbetaSectionObj, objMk_base, sigma_obj, sigmaObj, Grpd.coe_of, fstAux_app,
+  --     objMk_fiber, lamAbeta.pt_obj]
+
+  --     --rw![conjugateLiftFunc.obj]
+  --     sorry)
+
+  -- (eqToHom $ by
+  --  -- the two objects are in fact equal, as objects in the category of sections
+  --  apply Fiber_Grpd.ext
+  --  -- so now it suffices to just show equality between the underlying functors
+  --  dsimp only [pi, lamAbetaSectionObj, objMk_base, sigma_obj, sigmaObj, Grpd.coe_of, fstAux_app,
+  --    objMk_fiber, lamAbeta.pt_obj]
+  --  simp only[conjugateLiftFunc.obj,conjugate_FiberFunc.obj,conjugate]
+  --  have e : (lamAbeta.pt β x).obj ≫ (sigma A (β ⋙ forgetToGrpd)).map f =
+  --           A.map f ≫ (lamAbeta.pt β y).obj := lamAbeta_natural β f
+  --           -- Q:If I replace this lamAbeta_natural β f with sorry, and delete map_comp := sorry
+  --           --then Lean does not complain, why?
+
+  --  simp only[e]
+  --  simp[lamAbeta.pt]
+  --  simp[← CategoryTheory.Functor.assoc]
+  --  simp[toGrpd_map_inv_comp'']
+  --  rfl)
   map_comp := sorry
 
   --  have es: ∀ (X : ↑(A.obj y)),
